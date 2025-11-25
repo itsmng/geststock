@@ -88,62 +88,59 @@ class PluginGeststockConfig extends CommonDBTM {
    }
 
 
-   static function showConfigForm() {
-
-      $config = new self();
-
-      echo "<form method='post' action='".Toolbox::getItemTypeFormURL(__CLASS__)."'>";
-      echo "<table class='tab_cadre_fixe'>";
-      echo "<tr class='tab_bg_1'>";
-      echo "<th colspan='2'>".__('Configuration')."</th></tr>";
-
-      echo "<tr class='tab_bg_1'>";
-      $config->getFromDB(1);
-      echo "<td>".__('Entity of stock', 'geststock')."</td><td width='70%'>";
-      Entity::dropdown(['name'     => 'entities_id_stock',
-                        'value'    => isset($config->fields['entities_id_stock'])
-                                            ? $config->fields['entities_id_stock'] : '',
-                        'addicon'  => false,
-                        'comments' => false]);
-      echo "</td></tr>\n";
-
-      echo "<tr class='tab_bg_1'>";
-      echo "<td>".__('Status of item in stock', 'geststock')."</td><td width='70%'>";
-      State::dropdown(['name'     => 'stock_status',
-                       'value'    => isset($config->fields['stock_status'])
-                                           ? $config->fields['stock_status'] : '',
-                       'addicon'  => false,
-                       'comments' => false]);
-      echo "</td></tr>\n";
-
-      echo "<tr class='tab_bg_1'>";
-      echo "<td>".__('status of item in transit', 'geststock')."</td><td width='70%'>";
-      State::dropdown(['name'     => 'transit_status',
-                       'value'    => isset($config->fields['transit_status'])
-                                           ? $config->fields['transit_status'] : '',
-                       'addicon'  => false,
-                       'comments' => false]);
-      echo "</td></tr>\n";
-
-      echo "<tr class='tab_bg_1'>";
-      echo "<td>".__('Criterion of items', 'geststock')."</td><td width='70%'>";
-      $crit['serial']       = __('Serial number');
-      $crit['otherserial']  = __('Inventory number');
-      Dropdown::showFromArray('criterion', $crit,
-                              ['value' => isset($config->fields['criterion'])
-                                                ? $config->fields['criterion'] : '']);
-      echo "</td></tr>\n";
-
-      echo "<tr class='tab_bg_1'><td class='center' colspan='2'>";
-      if ($config->getFromDB(1)) {
-         echo "<input type='submit' name='update' value='Modifier' class='submit' ></td>";
-      } else {
-         echo "<input type='submit' name='add' value='Ajouter' class='submit' ></td>";
+   public function showForm($ID = 1, $options = [])
+   {
+      if (!Session::haveRight(self::$rightname, UPDATE)) {
+         return false;
       }
-      echo "</td></tr></table>";
-      HTML::closeForm();
 
-      return false;
+      $this->getFromDB($ID);
+
+      $form = [
+         'action' => $this->getFormURL(),
+         'itemtype' => self::class,
+         'id' => $ID,
+         'content' => [
+            'General' => [
+               'visible' => true,
+               'inputs' => [
+                  __('Entity of stock', 'geststock') => [
+                     'name' => 'entities_id_stock',
+                     'type' => 'select',
+                     'itemtype' => Entity::class,
+                     'value' => $this->fields['entities_id_stock'] ?? 0,
+                     'actions' => getItemActionButtons(['info'], "Entity"),
+                  ],
+                  __('Status of item in stock', 'geststock') => [
+                     'name' => 'stock_status',
+                     'type' => 'select',
+                     'itemtype' => State::class,
+                     'value' => $this->fields['stock_status'] ?? 0,
+                     'actions' => getItemActionButtons(['info'], "State"),
+                  ],
+                  __('Status of item in transit', 'geststock') => [
+                     'name' => 'transit_status',
+                     'type' => 'select',
+                     'itemtype' => State::class,
+                     'value' => $this->fields['transit_status'] ?? 0,
+                     'actions' => getItemActionButtons(['info'], "State"),
+                  ],
+                  __('Criterion of items', 'geststock') => [
+                     'name' => 'criterion',
+                     'type' => 'select',
+                     'values' => [
+                        'serial' => __('Serial number'),
+                        'otherserial' => __('Inventory number'),
+                     ],
+                     'value' => $this->fields['criterion'] ?? 'otherserial',
+                  ],
+               ],
+            ],
+         ],
+      ];
+
+      renderTwigForm($form, '', $this->fields);
+      return true;
    }
 
 }

@@ -33,7 +33,27 @@ header("Content-Type: text/html; charset=UTF-8");
 Html::header_nocache();
 
 // Make a select box
+if (isset($_POST["itemtype"]) && isset($_POST["myname"])) {
+   $itemtype = $_POST['itemtype'];
+   $myname = $_POST['myname'];
 
-if (isset($_POST["itemtype"])) {
-  PluginGeststockReservation::showAllModels( $_POST['myname'], $_POST['itemtype']);
+   // Determine the model class name
+   $modelclass = $itemtype . 'Model';
+   if ($itemtype == "PluginSimcardSimcard") {
+      $modelclass = 'PluginSimcardSimcardType';
+   }
+
+   // Get available models
+   if (class_exists($modelclass)) {
+      $model = new $modelclass();
+      $models = $model->find([], 'name');
+
+      echo "<select name='" . $myname . "' class='form-select' style='width: 80%;'>";
+      echo "<option value='0'>-----</option>";
+
+      foreach ($models as $m) {
+         echo "<option value='" . $m['id'] . "'>" . $m['name'] . "</option>";
+      }
+      echo "</select>";
+   }
 }

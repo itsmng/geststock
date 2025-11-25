@@ -287,24 +287,25 @@ class PluginGeststockReservation extends CommonDBTM {
 
       $ticket = new Ticket();
       $type   = $item = 0;
-      if (!$ID) {
-         echo "<tr class='tab_bg_1'>";
-         echo "<td>".__('Type')."<p>".__('Model')."</p><p>".__('Stock location', 'geststock')."</p>";
-         echo "</td><td colspan='3' class='top'>";
-         $config = new PluginGeststockConfig();
-         $config->getFromDB(1);
-         $entity = $config->fields['entities_id_stock'];
-         $number = isset($this->fields['_nbrereserv']) ? $this->fields['_nbrereserv'] : [];
-         self::showAllItems("_model", $this->fields['_itemtype'], $this->fields['_model'],
-                            $entity, $number);
-         echo "</td></tr>";
-      }
+
+      // Always show the first 3 fields (Type, Model, Stock location) for new and existing reservations
+      echo "<tr class='tab_bg_1'>";
+      echo "<td>".__('Type')."<p>".__('Model')."</p><p>".__('Stock location', 'geststock')."</p>";
+      echo "</td><td colspan='3' class='top'>";
+      $config = new PluginGeststockConfig();
+      $config->getFromDB(1);
+      $entity = $config->fields['entities_id_stock'];
+      $number = isset($this->fields['_nbrereserv']) ? $this->fields['_nbrereserv'] : [];
+      self::showAllItems("_model", $this->fields['_itemtype'], $this->fields['_model'],
+                         $entity, $number);
+      echo "</td></tr>";
 
       if (isset($this->input['_fromticket'])) {
          $options['tickets_id'] = $this->input['tickets_id'];
       }
       if (isset($options['tickets_id']) && ($options['tickets_id'] > 0)) {
          $ticket->getFromDB($options['tickets_id']);
+         echo "<tr class='tab_bg_1'>";
          echo "<td>".__('Delivery entity', 'geststock')."</td>";
          echo "<td colspan='3' class='top'>".
          Dropdown::getDropdownName('glpi_entities', $ticket->fields['entities_id']);
@@ -325,6 +326,7 @@ class PluginGeststockReservation extends CommonDBTM {
          echo "<input type='hidden' name='entities_id_deliv' value='".$ticket->fields['entities_id']."'>";
          echo "<input type='hidden' name='tickets_id' value='".$options['tickets_id']."'>";
          echo "<input type='hidden' name='_fromticket' value=1>";
+         echo "</td></tr>";
 
       } else {
          echo "<tr class='tab_bg_1'>";
@@ -332,8 +334,8 @@ class PluginGeststockReservation extends CommonDBTM {
                "</p><p> ".__('Ticket')."</td><td colspan='3' class='top'>";
          self::showAllEntities("locations_id", "tickets_id", $this->fields['entities_id_deliv'],
                                $this->fields['locations_id'], $this->fields['tickets_id']);
+         echo "</td></tr>";
       }
-      echo "</td></tr>";
 
       echo "<tr class='tab_bg_1'>";
       echo "<td>".__('Delivery date', 'geststock')."</td>";
@@ -655,6 +657,7 @@ class PluginGeststockReservation extends CommonDBTM {
                  'value'    => $valuel,
                  'myname'   => $mynamel];
 
+      echo "<p style='margin-top: 10px;'>";
       echo "<span id='show_$mynamel$rand'>\n";
       if ($value_type > 0) {
          self::showAllLocations($mynamel, $value_type, $valuel);
@@ -665,11 +668,13 @@ class PluginGeststockReservation extends CommonDBTM {
                                     Plugin::getWebDir('geststock')."/ajax/dropdownLocations.php",
                                     $params);
       echo "</span>\n";
+      echo "</p>";
 
       $params2 = ['entity'   => '__VALUE__',
                   'value'    => $valuet,
                   'myname'   => $mynamet];
 
+      echo "<p style='margin-top: 10px;'>";
       echo "<span id='show_$mynamet$rand'>\n";
       if ($value_type > 0) {
          self::showAllTickets($mynamet, $value_type, $valuet);
@@ -680,19 +685,23 @@ class PluginGeststockReservation extends CommonDBTM {
                                     Plugin::getWebDir('geststock')."/ajax/dropdownTickets.php",
                                     $params2);
       echo "</span>";
+      echo "</p>";
 
       return $rand;
    }
 
 
    static function showAllLocations($name, $entity, $location=0) {
+      $location_obj = new Location();
+      $locationlist = $location_obj->find(['entities_id' => $entity], 'name');
 
-      Location::dropdown(['width'    => '80%',
-                          'name'     => $name,
-                          'entity'   => $entity,
-                          'value'    => $location,
-                          'addicon'  => false,
-                          'comments' => false]);
+      echo "<select name='" . $name . "' class='form-select' style='width: 80%;'>";
+      echo "<option value='0'>-----</option>";
+      foreach ($locationlist as $loc) {
+         $selected = ($loc['id'] == $location) ? 'selected' : '';
+         echo "<option value='" . $loc['id'] . "' $selected>" . $loc['name'] . "</option>";
+      }
+      echo "</select>";
    }
 
 
@@ -700,23 +709,28 @@ class PluginGeststockReservation extends CommonDBTM {
       global $DB;
 
       $ticketlist = [];
-      foreach ($DB->request(['SELECT'  => 'tickets_id',
-                             'FROM'    => 'glpi_plugin_geststock_reservations']) as $data) {
+      foreach ($DB->request('glpi_plugin_geststock_reservations') as $data) {
          $ticketlist[] = $data['tickets_id'];
       }
 
-      $condition = [['NOT' => ['status' => array_merge(Ticket::getSolvedStatusArray(),
-                                                       Ticket::getClosedStatusArray())]],
-                    ['NOT' => ['id' => $ticketlist]],
-                    'type' => Ticket::DEMAND_TYPE];
+      $condition = [
+         ['NOT' => ['status' => array_merge(Ticket::getSolvedStatusArray(),
+                                           Ticket::getClosedStatusArray())]],
+         ['NOT' => ['id' => $ticketlist]],
+         'type' => Ticket::DEMAND_TYPE,
+         'entities_id' => $entity
+      ];
 
-      Ticket::dropdown(['width'     => '80%',
-                        'name'      => $name,
-                        'entity'    => $entity,
-                        'value'     => $ticket,
-                        'addicon'   => false,
-                        'comments'  => false,
-                        'condition' => $condition]);
+      $ticket_obj = new Ticket();
+      $ticketlist_available = $ticket_obj->find($condition, 'id');
+
+      echo "<select name='" . $name . "' class='form-select' style='width: 80%;'>";
+      echo "<option value='0'>-----</option>";
+      foreach ($ticketlist_available as $t) {
+         $selected = ($t['id'] == $ticket) ? 'selected' : '';
+         echo "<option value='" . $t['id'] . "' $selected>" . $t['id'] . " - " . $t['name'] . "</option>";
+      }
+      echo "</select>";
    }
 
 

@@ -31,27 +31,22 @@ use Glpi\Event;
 
 include ("../../../inc/includes.php");
 
-$pluginGeststockConfig = new PluginGeststockConfig();
-$_POST['id']           = 1;
-$_POST['users_id']     = $_SESSION['glpiID'];
+$config = new PluginGeststockConfig();
 
 if (isset($_POST["add"])) {
-   if ($newID = $pluginGeststockConfig->add($_POST)) {
-      Event::log($newID, "pluginGeststock", 4, "tools",
-      //TRANS: %1$s is the user login, %2$s is the name of the item to add
-      sprintf(__('%1$s adds the item %2$s'), $_SESSION["glpiname"], isset($_POST["name"])));
-      if ($_SESSION['glpibackcreated']) {
-         Html::redirect($pluginGeststockConfig->getFormURL()."?id=".$newID);
-      }
+   $_POST['id'] = 1;
+   if ($config->add($_POST)) {
+      Event::log(1, "pluginGeststockConfig", 4, "tools",
+         sprintf(__('%1$s adds the item %2$s'), $_SESSION["glpiname"], __('Configuration')));
    }
    Html::back();
 
 } else if (isset($_POST["update"])) {
-   $pluginGeststockConfig->update($_POST);
+   $config->update($_POST);
    Html::back();
 
 } else {
    Html::header(PluginGeststockReservation::getTypeName(1), '', "tools", "plugingeststockmenu");
-   $pluginGeststockConfig->showConfigForm();
+   $config->showForm(1);
    Html::footer();
 }

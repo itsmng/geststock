@@ -33,6 +33,18 @@ header("Content-Type: text/html; charset=UTF-8");
 Html::header_nocache();
 
 // Make a select box
-if (isset($_POST["entity"])) {
-   PluginGeststockReservation::showAllLocations($_POST["myname"], $_POST["entity"]);
+if (isset($_POST["entity"]) && isset($_POST["myname"])) {
+   $entity = (int)$_POST["entity"];
+   $myname = $_POST["myname"];
+
+   $locations = new Location();
+   $locationlist = $locations->find(['entities_id' => $entity], 'name');
+
+   echo "<select name='" . $myname . "' class='form-select' style='width: 80%;'>";
+   echo "<option value='0'>-----</option>";
+
+   foreach ($locationlist as $loc) {
+      echo "<option value='" . $loc['id'] . "'>" . $loc['name'] . "</option>";
+   }
+   echo "</select>";
 }

@@ -32,7 +32,48 @@ include ("../../../inc/includes.php");
 header("Content-Type: text/html; charset=UTF-8");
 Html::header_nocache();
 
-// Make a select box
-if (isset($_POST["entity"])) {
-   PluginGeststockReservation::showAllTickets($_POST["myname"], $_POST["entity"]);
+if (isset($_POST["entity"]) && isset($_POST["myname"])) {
+   global $DB;
+
+   $entity = (int)$_POST["entity"];
+   $myname = $_POST["myname"];
+
+   $ticketlist = [];
+   $result = $DB->request('glpi_plugin_geststock_reservations');
+   foreach ($result as $data) {
+      if (!empty($data['tickets_id'])) {
+         $ticketlist[] = $data['tickets_id'];
+      }
+   }
+
+   $result = $DB->request([
+      'SELECT' => ['id', 'name', 'status', 'type'],
+      'FROM' => 'glpi_tickets',
+      'WHERE' => [
+         'entities_id' => $entity,
+         'type' => Ticket::DEMAND_TYPE
+      ],
+      'ORDER' => 'id DESC'
+   ]);
+
+   $ticketlist_available = [];
+   foreach ($result as $ticket) {
+      if (!in_array($ticket['id'], $ticketlist)) {
+         $closed_statuses = array_merge(
+            Ticket::getSolvedStatusArray(),
+            Ticket::getClosedStatusArray()
+         );
+         if (!in_array($ticket['status'], $closed_statuses)) {
+            $ticketlist_available[] = $ticket;
+         }
+      }
+   }
+
+   echo "<select name='" . $myname . "' class='form-select' style='width: 80%;'>";
+   echo "<option value='0'>-----</option>";
+
+   foreach ($ticketlist_available as $t) {
+      echo "<option value='" . $t['id'] . "'>[" . $t['id'] . "] " . $t['name'] . "</option>";
+   }
+   echo "</select>";
 }

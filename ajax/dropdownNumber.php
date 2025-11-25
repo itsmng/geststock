@@ -33,5 +33,49 @@ header("Content-Type: text/html; charset=UTF-8");
 Html::header_nocache();
 
 if (isset($_POST["itemtype"]) && isset($_POST["model"])) {
-   PluginGeststockReservation::showAllNumbers($_POST["itemtype"], $_POST["model"]);
+   global $DB;
+
+   $itemtype = $_POST["itemtype"];
+   $model = (int)$_POST["model"];
+
+   $config = new PluginGeststockConfig();
+   $config->getFromDB(1);
+   $entity = $config->fields['entities_id_stock'];
+
+   echo "<table style='width: 100%;'><tr>";
+   $find = false;
+   $i = 0;
+
+   foreach ($DB->request('glpi_locations', ['entities_id' => $entity]) as $location) {
+      // Count available items
+      $nb = 0;
+      if (class_exists('PluginGeststockReservation_Item')) {
+         $nb = PluginGeststockReservation_Item::countAvailable($itemtype, $model, $entity, $location['id']);
+      }
+
+      if ($nb > 0) {
+         if ($i == 3) {
+            echo "</tr><tr>";
+         }
+         echo "<td style='padding: 5px;'>" . $location['name'] . " <span style='color: blue; font-weight: bold;'>(" . $nb . ")</span></td>";
+         echo "<td style='padding: 5px;'>";
+         echo "<select name='_nbrereserv[" . $location['id'] . "]' class='form-select' style='width: 80px;'>";
+         echo "<option value='0'>0</option>";
+         for ($j = 1; $j <= $nb; $j++) {
+            echo "<option value='" . $j . "'>" . $j . "</option>";
+         }
+         echo "</select>";
+         $find = true;
+         $i++;
+         echo "</td>";
+         if ($i == 3) {
+            $i = 0;
+         }
+      }
+   }
+
+   if (!$find) {
+      echo "<td style='color: red; font-weight: bold;'>No free item</td>";
+   }
+   echo "</tr></table>";
 }
