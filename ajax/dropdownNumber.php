@@ -75,7 +75,7 @@ if (isset($_POST["itemtype"]) && isset($_POST["model"])) {
    }
 
    if (!$find) {
-      echo "<td style='color: red; font-weight: bold;'>No free item</td>";
+      echo "<td style='color: red; font-weight: bold;'>" . __('No free item', 'geststock') . "</td>";
    }
    echo "</tr></table>";
 }

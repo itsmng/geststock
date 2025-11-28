@@ -346,14 +346,10 @@ class PluginGeststockReservation extends CommonDBTM {
 
       echo "<tr class='tab_bg_1'>";
       echo "<td>".__('Status')."</td><td colspan='3'>";
-      if (Session::haveRight(self::$rightname, PluginGeststockGestion::GESTION)
-          && $ID) {
          $params = self::getAllStatusArray();
-         $params['value'] = $this->fields['status'];
+         $params['value'] = $ID ? $this->fields['status'] : self::ASKED;
+         $params['disabled'] = 'disabled';
          self::dropdownStatus('status',$params);
-      } else {
-         echo self::getStatusName($ID ? $this->fields['status']:self::ASKED);
-      }
       echo "</td></tr>";
 
       if (PluginGeststockConfig::TOVA == 1) {

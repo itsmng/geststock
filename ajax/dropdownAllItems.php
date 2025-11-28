@@ -36,6 +36,7 @@ Html::header_nocache();
 if (isset($_POST["itemtype"]) && isset($_POST["myname"])) {
    $itemtype = $_POST['itemtype'];
    $myname = $_POST['myname'];
+   $entity = isset($_POST['entity']) ? $_POST['entity'] : -1;
 
    // Determine the model class name
    $modelclass = $itemtype . 'Model';
@@ -48,12 +49,45 @@ if (isset($_POST["itemtype"]) && isset($_POST["myname"])) {
       $model = new $modelclass();
       $models = $model->find([], 'name');
 
-      echo "<select name='" . $myname . "' class='form-select' style='width: 80%;'>";
+      $rand = mt_rand();
+      echo "<select name='" . $myname . "' id='dropdown_" . $myname . $rand . "' class='form-select' style='width: 80%;'>";
       echo "<option value='0'>-----</option>";
 
       foreach ($models as $m) {
          echo "<option value='" . $m['id'] . "'>" . $m['name'] . "</option>";
       }
       echo "</select>";
+
+      // Setup AJAX listener for model changes
+      $field_id = 'dropdown_' . $myname . $rand;
+
+      echo "<span id='show_number_" . $rand . "' style='spacing:5px;'>&nbsp;</span>";
+
+      echo "<script>";
+      echo "jQuery(document).ready(function() {
+         var modelDropdown = jQuery('#" . $field_id . "');
+
+         // When model changes, call dropdownNumber.php
+         modelDropdown.on('change', function() {
+            var modelValue = jQuery(this).val();
+            if (modelValue > 0) {
+               jQuery.ajax({
+                  url: '" . Plugin::getWebDir('geststock') . "/ajax/dropdownNumber.php',
+                  type: 'POST',
+                  data: {
+                     itemtype: '" . addslashes($itemtype) . "',
+                     model: modelValue,
+                     entity: '" . $entity . "'
+                  },
+                  success: function(data) {
+                     jQuery('#show_number_" . $rand . "').html(data);
+                  }
+               });
+            } else {
+               jQuery('#show_number_" . $rand . "').html('&nbsp;');
+            }
+         });
+      });";
+      echo "</script>";
    }
 }
