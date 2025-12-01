@@ -46,6 +46,7 @@ class PluginGeststockMenu extends CommonGLPI {
       $menu                      = [];
       $menu['title']             = self::getMenuName();
       $menu['page']              = "/plugins/geststock/front/reservation.php";
+      $menu['icon']              = 'fas fa-boxes';
       $menu['links']['search']   = PluginGeststockReservation::getSearchURL(false);
 
       if (Session::haveRight('plugin_geststock', CREATE)) {
