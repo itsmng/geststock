@@ -83,7 +83,7 @@ function plugin_version_geststock() {
            'version'        => '2.0.1',
            'author'         => 'Nelly Mahu-Lasson',
            'license'        => 'GPLv3+',
-           'homepage'       => 'https://github.com/yllen/geststock',
+           'homepage'       => 'https://github.com/itsmng/geststock',
            'page'           => "/front/reservation.php",
            'minGlpiVersion' => '9.5.3',
            'requirements'   => ['glpi' => ['min' => '9.5.3',
